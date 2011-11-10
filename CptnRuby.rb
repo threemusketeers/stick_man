@@ -88,6 +88,7 @@ class Heart < Collectible
 end
 
 class Monster
+  attr_reader :x, :y
   def initialize(x, y)
     @x, @y = x, y
   end
@@ -98,22 +99,28 @@ class Monster
   
   def draw
     # Draw, slowly rotating
-    image.draw(@x, @y, 0)
+    image.draw(@x-50, @y-50, 0)
   end
   
   def image
     self.class.image
   end
+  
+  def touching?(cptn)
+    # puts [[x, cptn.x], [y, cptn.y]].inspect
+    (self.x - cptn.x).abs < 50 and (self.y - cptn.y).abs < 50
+  end
+  
 
   def self.image
-    @gem_img ||= Image.new($window, "media/Starfighter.bmp", false)
+    @gem_img ||= Image.new($window, "media/skeleton.png", false)
   end
 end
 
 # Player class.
 class CptnRuby
   attr_reader :x, :y
-  attr_reader :score
+  attr_reader :score, :lives
 
   def initialize(window, x, y)
     @x, @y = x, y
@@ -127,9 +134,16 @@ class CptnRuby
     # This is set in update, and used in draw.
     @cur_image = @standing   
     @score = 0
+    @lives = 5
      
   end
-  
+
+  def die
+    @lives -= 1
+    sleep(2)
+    @x, @y = 400, 100
+    draw
+  end
   def draw
     # Flip vertically when facing to the left.
     if @dir == :left then
@@ -205,7 +219,7 @@ end
 
 # Map class holds and draws tiles and gems.
 class Map
-  attr_reader :width, :height, :gems
+  attr_reader :width, :height, :gems, :monsters
   
   def initialize(window, filename)
     # Load 60x60 tiles, 5px overlap in all four directions.
@@ -283,6 +297,9 @@ class Game < Window
     move_x += 5 if button_down? KbRight
     @cptn.update(move_x)
     @cptn.collect_gems(@map.gems)
+    if @map.monsters.any? {|monster| monster.touching? @cptn }
+      @cptn.die
+    end
     # Scrolling follows player
     @camera_x = [[@cptn.x - 320, 0].max, @map.width * 50 - 640].min
     @camera_y = [[@cptn.y - 240, 0].max, @map.height * 50 - 480].min
@@ -294,6 +311,7 @@ class Game < Window
       @cptn.draw
     end
     @font.draw("Score: #{@cptn.score}", 10, 10, ZOrder::UI, 1.0, 1.0, 0xffffff00)
+    @font.draw("Lives: #{@cptn.lives}", 500, 10, ZOrder::UI, 1.0, 1.0, 0xffffff00)
   end
   def button_down(id)
     if id == KbUp then @cptn.try_to_jump end
