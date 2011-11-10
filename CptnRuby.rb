@@ -35,10 +35,11 @@ module Tiles
 end
 
 class Collectible
-  attr_reader :x, :y, :points
+  attr_reader :x, :y, :points, :lives
 
   def initialize(x, y)
     @x, @y = x, y
+    @lives = 0
   end
   
   def touching?(x,y)
@@ -75,6 +76,7 @@ class Heart < Collectible
   def initialize(x, y)
     super
     @points = 15
+    @lives = 1
   end
   
   def draw
@@ -140,9 +142,13 @@ class CptnRuby
 
   def die
     @lives -= 1
-    sleep(2)
-    @x, @y = 400, 100
-    draw
+    if @lives > 0
+      sleep(2)
+      @x, @y = 400, 100
+      draw
+    else
+      sleep 100
+    end
   end
   def draw
     # Flip vertically when facing to the left.
@@ -209,6 +215,7 @@ class CptnRuby
     gems.reject! do |c|
       if c.touching?(@x, @y)
         @score += c.points
+        @lives += c.lives
         true
       else
         false
